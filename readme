@@ -1,4 +1,0 @@
-python main_distance.py --cfg path_to_.yaml --desc model_name
-python main.py --cfg path_to_.yaml --desc model_name
-python main_infer.py --cfg path_to_.yaml --desc model_name
-python main_infer_nolabel.py --cfg path_to_.yaml --desc model_name
