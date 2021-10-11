@@ -1,0 +1,37 @@
+common:
+  seed: 8994
+  vis_GPU: '2' #single GPU compatibility
+  log_path: '/data/knee_mri8/Francesco/Experiments/Inference/logs/scapula_rap2D/'
+  pred_path: '/data/knee_mri8/Francesco/Experiments/Inference/pred/scapula_rap2D/'
+
+data_infer:
+  data_root: '/data/bigbone6/Francesco/pickles/val_cropped_list_2.pickle'
+  batch_size: 1
+  im_dims: [124,364]
+  crop : !!python/tuple [0,0,0,0]
+  num_classes: 1
+  idx_classes : [0]
+  num_channels: 1
+  evaluate_mode: True
+  view: 'coronal'
+
+dataLoader_folder: 'dataLoader'
+learn:
+  loss: 'dice_loss_sigmoid'
+  metrics: 'dice_score'
+  num_classes: 1
+  dataloader: 'data_loader'
+  keep_prob: 1.0
+  save_pred: True
+
+model: 'VNet'
+model_params:
+# github.com/MiguelMonteiro/VNet-Tensorflow
+  num_classes: 1
+  num_channels : 16
+  num_levels : 2
+  num_convolutions : !!python/tuple [4, 4]
+  bottom_convolutions : 2
+
+trained_model:
+  ckpt: '/data/knee_mri8/Francesco/Experiments/ckpts/scapula_rap_2D/0930134840_train_scapula2D_coronal_augment_cv2_ctd'

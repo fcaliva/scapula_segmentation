@@ -1,0 +1,37 @@
+common:
+  seed: 8994
+  vis_GPU: '0' #single GPU compatibility
+  log_path: './experiments/inference/new_logs/'
+  pred_path: './experiments/inference/new_pred/'
+
+data_infer:
+  data_root: '/data/bigbone5/JacobOeding/DL_code/LargeInference/big_2D_AX_table_new_fixed.csv'
+  batch_size: 1
+  im_dims: [512, 512]
+  crop : !!python/tuple [0, 0, 0, 0]
+  num_classes: 3
+  idx_classes : [0, 1, 2]
+  num_channels: 1
+  normalization_file: '/data/bigbone5/JacobOeding/DL_code/LargeInference/2D_mat_files/Min_Max_Data/Ax_MinMaxDataset.csv'
+
+dataLoader_folder: 'dataLoader'
+learn:
+  loss: 'dice_loss_softmax'
+  metrics: 'spatial_dice'
+  num_classes: 3
+  dataloader: 'data_loader_infer_nolabel'
+  keep_prob: 1.0
+  save_pred: True
+
+model_folder: VNet
+model: 'VNet'
+model_params:
+# github.com/MiguelMonteiro/VNet-Tensorflow
+  num_classes: 3
+  num_channels : 16
+  num_levels : 5
+  num_convolutions : !!python/tuple [1, 1, 1, 1, 1]
+  bottom_convolutions : 2
+
+trained_model:
+  ckpt: '/data/bigbone5/JacobOeding/DL_code/experiments/training/ckpt/0604231043_axial_norm_perc/model.ckpt-4501'

@@ -132,5 +132,5 @@ dmypy.json
 experiments/
 scriptjuno/
 /pickles/
-
+._*
 

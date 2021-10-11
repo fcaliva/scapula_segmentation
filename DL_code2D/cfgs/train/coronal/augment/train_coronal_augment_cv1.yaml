@@ -1,0 +1,60 @@
+common:
+  seed: 1234
+  vis_GPU: '2' #single GPU compatibility
+  log_path: '/data/knee_mri8/Francesco/Experiments/logs/scapula_rap_2D/'
+  save_path: '/data/knee_mri8/Francesco/Experiments/ckpts/scapula_rap_2D/'
+  print_freq: 25
+
+data_train:
+  data_root: '/data/bigbone6/vwong/Data_Splits/train_list_1.pkl'
+  batch_size: 8
+  im_dims: [124,364]
+  crop : !!python/tuple [0,0,0,0]
+  num_classes: 1
+  idx_classes : [0]
+  num_channels: 1
+  normalization_file: ''
+  evaluate_mode: False
+  view: 'coronal'
+
+data_val:
+  data_root: '/data/bigbone6/vwong/Data_Splits/val_list_1.pkl'
+  batch_size: 8
+  im_dims: [124,364]
+  crop : !!python/tuple [0,0,0,0]
+  num_classes: 1
+  idx_classes : [0]
+  num_channels: 1
+  normalization_file: ''
+  evaluate_mode: False
+  view: 'coronal'
+
+dataLoader_folder: 'dataLoader'
+learn:
+  max_steps: 100000 # instead of epochs
+  lr : 0.0005
+  optimizer: 'adam'
+  loss: 'dice_loss_sigmoid'
+  metrics: 'dice_score'
+  weights: [1.0]
+  num_classes: 1
+  dataloader: 'data_loader'
+  comp: ['scapula']
+  key_slice: !!python/tuple [0]
+  patience: 30 # in number of validation runs
+  keep_prob : 0.95
+  val_freq : 90 # in steps
+
+model_folder: VNet
+model: 'VNet'
+model_params:
+# github.com/MiguelMonteiro/VNet-Tensorflow
+  num_classes: 1
+  num_channels : 16
+  num_levels : 2
+  num_convolutions : !!python/tuple [4, 4]
+  bottom_convolutions : 2
+
+pretrain:
+  flag: False
+  ckpt: ''
