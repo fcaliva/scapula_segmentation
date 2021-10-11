@@ -1,0 +1,40 @@
+common:
+  seed: 8994
+  vis_GPU: '1' #single GPU compatibility
+  log_path: '/data/knee_mri8/Francesco/Experiments/Inference/logs/scapula_rap3D/'
+  pred_path: '/data/knee_mri8/Francesco/Experiments/Inference/pred/scapula_rap3D/'
+
+data_infer:
+  data_root : '/data/bigbone6/vwong/Data_Splits/val_list_3.pkl'
+  batch_size: 1
+  im_dims: [364,364,124]
+  crop : !!python/tuple [0,0,0,0,0,0]
+  num_classes: 1
+  idx_classes : [0]
+  num_channels: 1
+  evaluate_mode: True
+  augment: False
+
+dataLoader_folder: 'dataLoader_main'
+learn:
+  loss: 'dice_loss_sigmoid'
+  metrics: 'spatial_dice'
+  num_classes: 1
+  dataloader: 'data_loader_scapula'
+  comp: ['scapula']
+  key_slice: !!python/tuple [50]
+  save_pred: True
+  keep_prob : 1.0
+
+model_folder: 'VNet'
+model: 'VNet'
+model_params:
+# github.com/MiguelMonteiro/VNet-Tensorflow
+  num_classes: 1
+  num_channels : 12
+  num_levels : 4
+  num_convolutions : !!python/tuple [1, 3, 4, 3]
+  bottom_convolutions : 4
+
+trained_model:
+  ckpt: '/data/knee_mri8/Francesco/Experiments/ckpts/scapula_rap_3D/0915123157_train_scapula3D_augment_cv3'

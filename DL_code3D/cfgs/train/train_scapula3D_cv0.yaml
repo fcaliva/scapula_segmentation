@@ -1,0 +1,58 @@
+common:
+  seed: 8994
+  vis_GPU: 'all' #single GPU compatibility
+  log_path: '/data/knee_mri8/Francesco/Experiments/logs/scapula_rap_3D/'
+  save_path: '/data/knee_mri8/Francesco/Experiments/ckpts/scapula_rap_3D/'
+  print_freq: 10
+
+data_train:
+  data_root: '/data/bigbone6/Francesco/pickles/train_cropped_list_0.pickle'
+  batch_size: 1
+  im_dims: [364,364,124]
+  crop : !!python/tuple [0,0,0,0,0,0]
+  num_classes: 1
+  idx_classes : [0]
+  num_channels: 1
+  evaluate_mode: False
+  augment: False
+
+data_val:
+  data_root : '/data/bigbone6/Francesco/pickles/val_cropped_list_0.pickle'
+  batch_size: 1
+  im_dims: [364,364,124]
+  crop : !!python/tuple [0,0,0,0,0,0]
+  num_classes: 1
+  idx_classes : [0]
+  num_channels: 1
+  evaluate_mode: False
+  augment: False
+
+dataLoader_folder: 'dataLoader_main'
+learn:
+  max_steps: 100000 # instead of epochs
+  lr : 0.00001
+  optimizer: 'adam'
+  loss: 'dice_loss_sigmoid' #ce_softmax_weighted_distance' #'dice_loss_softmax' #'ce_softmax_weighted_distance'
+  metrics: 'spatial_dice'
+  weights: [1.0]
+  num_classes: 1
+  dataloader: 'data_loader_scapula'
+  comp: ['lesion']
+  key_slice: !!python/tuple [50]
+  patience: 30 # in number of validation runs
+  keep_prob : 0.95
+  val_freq : 90 # in steps
+
+model_folder: 'VNet'
+model: 'VNet'
+model_params:
+# github.com/MiguelMonteiro/VNet-Tensorflow
+  num_classes: 1
+  num_channels : 12
+  num_levels : 4
+  num_convolutions : !!python/tuple [1, 3, 4, 3]
+  bottom_convolutions : 4
+
+pretrain:
+  flag: False
+  ckpt:
