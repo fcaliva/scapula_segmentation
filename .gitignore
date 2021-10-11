@@ -129,8 +129,8 @@ dmypy.json
 .pyre/
 
 # Folder
-DL_code2D/experiments/
-DL_code3D/scriptjuno/
-DL_code3D/pickles/
+./DL_code2D/experiments/
+./DL_code3D/scriptjuno/
+./DL_code3D/pickles/
 
 
