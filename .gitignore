@@ -131,6 +131,7 @@ dmypy.json
 # Folder
 experiments/
 scriptJuno/
-/pickles/
+pickles/
+extraFiles/
 ._*
 
