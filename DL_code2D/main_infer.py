@@ -96,6 +96,7 @@ if config['learn']['save_pred']:
     pred_path = config['common']['pred_path'] + sys.stdout.name + '/'
     os.makedirs(pred_path)
 
+print('\n\n',config['common']['pred_path'] + sys.stdout.name,'\n\n')
 with tf.Session() as sess:
     init_op.run()
     model_name = config['trained_model']['ckpt']
@@ -124,11 +125,20 @@ with tf.Session() as sess:
             volSize = 124
         elif config['data_infer']['view'] == 'sagittal':
             volSize = 364
+        elif config['data_infer']['view'] == 'sagittal_nikan':
+            volSize = 160
+        elif config['data_infer']['view'] == 'axial_nikan':
+            volSize = 302
 
         current_name = ''
         jj=-1
         for viter in range(np.floor(loader_infer.__len__()/config['data_infer']['batch_size']).astype(int)):
-            [ im_inf, seg_inf, name_inf ] = loader_infer.fetch_batch()
+            try:
+                [ im_inf, seg_inf, name_inf ] = loader_infer.fetch_batch()
+            except:
+                pdb.set_trace()
+
+
             volname = name_inf[0].split('/')[-1].split('_I')[0].split('.im')[0]
 
             if volname in current_name:
@@ -136,7 +146,10 @@ with tf.Session() as sess:
             else:
                 if jj != -1:
                     filename = pred_path + current_name
-                    savemat(filename,{'input': vol_im, 'gt': vol_seg.astype(np.uint8), 'pred':(vol_pred>=0.5).astype(np.uint8)})
+                    if "nikan" in config['data_infer']['view']:
+                        savemat(filename,{'input': vol_im, 'pred':vol_pred.astype(np.float)})
+                    else:
+                        savemat(filename,{'input': vol_im, 'gt': vol_seg.astype(np.uint8), 'pred':(vol_pred>=0.5).astype(np.uint8)})
                     print(f'processed {filename}')
                 current_name = volname
                 new_volume = True
@@ -150,7 +163,10 @@ with tf.Session() as sess:
 
             for id_in_batch in range(config['data_infer']['batch_size']):
                 idx_vol = jj#(viter*config['data_infer']['batch_size'] + id_in_batch)%volSize
-                vol_im[...,idx_vol]   = np.squeeze(im_inf[id_in_batch,...])
+                try:
+                    vol_im[...,idx_vol]   = np.squeeze(im_inf[id_in_batch,...])
+                except:
+                    pdb.set_trace()
                 vol_seg[...,idx_vol,:]  = seg_inf[id_in_batch,...]
                 vol_pred[...,idx_vol,:] = inf_pred[id_in_batch,...]
                 jj+=1
@@ -165,7 +181,10 @@ with tf.Session() as sess:
         #             vol_seg = np.delete(vol_seg,range(sl,volSize),axis=-2)
         #             vol_pred = np.delete(vol_pred,range(sl,volSize),axis=-2)
         #             break
-        savemat(filename,{'input': vol_im, 'gt': vol_seg.astype(np.uint8), 'pred':(vol_pred>=0.5).astype(np.uint8)})
+        if "nikan" in config['data_infer']['view']:
+            savemat(filename,{'input': vol_im, 'pred':vol_pred})
+        else:
+            savemat(filename,{'input': vol_im, 'gt': vol_seg.astype(np.uint8), 'pred':(vol_pred>=0.5).astype(np.uint8)})
         print(f'processed {filename}')
 
 
@@ -188,6 +207,7 @@ with tf.Session() as sess:
     inf_cum_loss_std, inf_cum_score_std, inf_classes_cum_score_std = inf_track.stdev()
     print ('--'*15+'Summary'+'--'*15)
     print( 'Inference Score: {:.4f}\u00B1{:.4f}),\t Per Class: {}\u00B1({})\t'.format(inf_cum_score,inf_cum_score_std, str(np.round(inf_classes_cum_score,4)),str(np.round(inf_classes_cum_score_std,4))))
+    print('\n\n',config['common']['pred_path'] + sys.stdout.name,'\n\n')
     start_time = time.time()
     for_timing = sess.run([pred], feed_dict = {input: im_inf, gt: seg_inf,keep_prob:1.0})
     elapsed_time = time.time() - start_time

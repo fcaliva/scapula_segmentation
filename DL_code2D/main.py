@@ -53,6 +53,7 @@ if not os.path.exists(config['common']['save_path']):
     os.makedirs(config['common']['save_path'])
 
 sys.stdout = logger(sys.stdout,path=config['common']['log_path'],desc=desc)
+
 print('\n\n',sys.stdout.name,'\n\n')
 pprint(config)
 if 'all' not in config['common']['vis_GPU']:
@@ -126,7 +127,10 @@ with tf.Session(config=c) as sess:
         if "model.ckpt-" not in model_name:
             ckpt_id_available = ([x.split('model.ckpt-')[-1].split('.')[0] for x in os.listdir(model_name)])
             ckpt_id_available = np.max([np.int(x) for x in ckpt_id_available if(x!='events' and x!='checkpoint')])
-            model_name = model_name+ '/model.ckpt-'+str(ckpt_id_available)
+            if model_name[-1]=='/':
+                model_name = model_name+ 'model.ckpt-'+str(ckpt_id_available)
+            else:
+                model_name = model_name+ '/model.ckpt-'+str(ckpt_id_available)
         saver.restore(sess, model_name)
         print(f'Restore {model_name}')
         val_track = tracker.tracker(num_classes=config['data_val']['num_classes'])
@@ -137,11 +141,15 @@ with tf.Session(config=c) as sess:
                 loader_val.batch_cnt += 1
                 print('fetch_batch on val set did not work')
                 continue
-            val_summary, val_loss, val_classes_score, val_score = sess.run([val_summary_op, loss, score_classes, avg_score], feed_dict = {input: im_val, gt: seg_val,keep_prob:1.0})
+            val_summary, val_loss, val_classes_score, val_score, val_pred = sess.run([val_summary_op, loss, score_classes, avg_score, pred], feed_dict = {input: im_val, gt: seg_val,keep_prob:1.0})
             val_track.increment(val_loss,val_score,val_classes_score)
         _,val_cum_score,_ = val_track.average()
         _, _ = patience.track(val_cum_score)
         print('Restored successfully. Initial score {}'.format(val_cum_score))
+        # from scipy.io import savemat
+        # savemat('/data/knee_mri8/Francesco/scapula_project_RAP/DL_code2D/validation_example',{'input':im_val,'gt':seg_val,'pred': val_pred})
+
+    print('\n\n',config['common']['save_path'] + sys.stdout.name,'\n\n')
     print('Training')
     train_track = tracker.tracker(num_classes=config['data_train']['num_classes'])
 
@@ -153,6 +161,8 @@ with tf.Session(config=c) as sess:
             print('fetch_batch on train set did not work')
             continue
         _, summary, current_loss, train_classes_score, train_score, train_pred= sess.run([trainer, train_summary_op, loss, score_classes, avg_score, pred], feed_dict = {input: im_train, gt: seg_train, keep_prob: config['learn']['keep_prob']})
+        # savemat('/data/knee_mri8/Francesco/scapula_project_RAP/DL_code2D/training_example',{'input':im_train,'gt':seg_train,'pred': train_pred})
+        # pdb.set_trace()
         train_track.increment(current_loss,train_score,train_classes_score)
         if iter != 0 and iter %config['common']['print_freq']==0:
             train_cum_loss,train_cum_score,train_classes_cum_score = train_track.average()
@@ -193,5 +203,6 @@ with tf.Session(config=c) as sess:
                 writer.close()
                 sess.close()
                 break
+    print('\n\n',config['common']['save_path'] + sys.stdout.name,'\n\n')
     writer.close()
     print('Model finished training for {} steps'.format(iter))

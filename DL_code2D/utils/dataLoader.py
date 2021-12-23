@@ -13,7 +13,11 @@ import pdb
 
 def load_h5py(fname, view='', slice=0):
     with h5py.File(fname,'r') as hf:
-        img = np.array(hf['data'])
+        try:
+            img = np.array(hf['data'])
+        except:
+            img = np.array(hf['mri'])
+
         if np.iscomplex(img).all():
             img = np.abs(img).astype('float32')
         else:
@@ -21,6 +25,8 @@ def load_h5py(fname, view='', slice=0):
     if view == 'sagittal':
         img = img.transpose([0,2,1])
     elif view == 'coronal':
+        img = img.transpose([2,1,0])
+    elif view == 'axial_nikan':
         img = img.transpose([2,1,0])
     return img[...,slice]
 
@@ -79,24 +85,10 @@ def get_normalization_values(normalization_file):
 class data_loader:
     def __init__( self, data_root, batch_size, im_dims, crop, num_classes, idx_classes, num_channels, normalization_file = ' ', evaluate_mode=False, view = ''):
         # modify these lines to increase data loader flexibility
-        if view == 'coronal':
-            nSlices = 364
-        elif view == 'axial':
-            nSlices = 124
-        elif view == 'sagittal':
-            nSlices = 364
 
         if '.pkl' in data_root or '.pickle' in data_root:
             with open( data_root, "rb" ) as lf:
                 list_files = pickle.load( lf )
-
-            lof = []
-            counter_slices = []
-            for ff in list_files:
-                for c_sl in range(nSlices):
-                    lof.append(ff)
-                    counter_slices.append(c_sl)
-            list_files = lof
         elif '.csv' in data_root:
             list_files = pd.read_csv(data_root,header=None).values.tolist()
         elif '.lsx' in data_root or '.xls' in data_root:
@@ -105,6 +97,42 @@ class data_loader:
             print('Our dataLoader is not prepared to accept such input data, see its __init__')
             exit()
             return
+
+
+        if view == 'coronal':
+            nSlices = 364
+        elif view == 'axial':
+            nSlices = 124
+        elif view == 'sagittal':
+            nSlices = 364
+        elif view == 'sagittal_nikan':
+            nSlices = 160
+        elif view == 'axial_nikan':
+            nSlices = 302
+
+        if view == 'sagittal_nikan':
+            lof = []
+            counter_slices = []
+            for ff in list_files:
+                for c_sl in range(0,nSlices):
+                    lof.append(ff)
+                    counter_slices.append(c_sl)
+        elif view == 'axial_nikan':
+            lof = []
+            counter_slices = []
+            for ff in list_files:
+                for c_sl in range(82,384):
+                    lof.append(ff)
+                    counter_slices.append(c_sl)
+        else:
+            lof = []
+            counter_slices = []
+            for ff in list_files:
+                for c_sl in range(nSlices):
+                    lof.append(ff)
+                    counter_slices.append(c_sl)
+        list_files = lof
+
 
         self.all_files       = list_files
         self.counter_slices   = counter_slices
@@ -127,13 +155,6 @@ class data_loader:
         self.name_batch      = []
         self.view            = view
 
-        # if ' ' not in normalization_file:
-        #     self.norm_values = get_normalization_values(normalization_file)
-        #     self.normalize_input = True
-        # else:
-        #     self.norm_values = normalization_file
-        #     self.normalize_input = False
-
     def __len__( self ):
         return len(self.order_idx)
 
@@ -155,12 +176,16 @@ class data_loader:
         else:
             img = load_h5py(fname_img,view=self.view, slice= self.counter_slices[idx])
 
+        img = crop_volume(img, self.crop)
+
         if self.evaluate_mode:
             img /= (img.max()+1e-9)
         else:
-            img =  img/(random.randrange(np.int(img.max())-500, np.int(img.max())+500)+1e-9)
+            if "nikan" in self.view:
+                img = (img.max()+1e-9)
+            else:
+                img =  img/(random.randrange(np.int(img.max())-500, np.int(img.max())+500)+1e-9)
 
-        img = crop_volume(img, self.crop)
         if len(self.im_dims)==3 or len(self.im_dims)==2:
             img /= (np.percentile(img,85)+1e-9)
 
@@ -169,8 +194,6 @@ class data_loader:
         else:
             seg = load_h5py(fname_seg,view=self.view, slice= self.counter_slices[idx]).astype('uint8')
 
-#            with h5py.File(fname_seg,'r') as hf:
-#                seg = np.array(hf['data']).astype('uint8')
 
         if seg.ndim == len(self.im_dims):
             seg = seg[...,np.newaxis]
@@ -178,7 +201,6 @@ class data_loader:
         seg = seg[...,self.idx_classes]
 
         seg = crop_volume(seg, self.crop)
-
         return img, seg, fname_img
 
     def fetch_batch(self):
@@ -204,85 +226,86 @@ class data_loader:
             if self.evaluate_mode == False:
                 self.__shuffle__()
 
+        self.im_batch, self.seg_batch, self.name_batch
         return self.im_batch, self.seg_batch, self.name_batch
 
 
-class data_loader_infer_nolabel:
-    def __init__( self, data_root, batch_size, im_dims, crop, num_classes, idx_classes, num_channels, normalization_file = ' '):
-        # modify these lines to increase data loader flexibility
-
-        if '.pkl' in data_root or '.pickle' in data_root:
-            with open( data_root, "rb" ) as lf:
-                list_files = pickle.load( lf )
-        elif '.csv' in data_root:
-            list_files = pd.read_csv(data_root, header=None).values.tolist()
-        elif '.lsx' in data_root or '.xls' in data_root:
-            list_files = pd.read_excel(data_root).values.tolist()
-        else:
-            print('Our dataLoader is not prepared to accept such input data, see its __init__')
-            exit()
-            return
-
-        self.all_files       = list_files
-        self.order_idx       = list(range(len(self.all_files)))
-        self.data_size       = len(self.order_idx)
-        self.batch_size      = batch_size
-        self.batch_cnt       = 0
-        self.batch_max       = np.ceil(self.data_size/self.batch_size)
-        self.im_dims         = im_dims
-
-        self.im_batch        = np.zeros([self.batch_size]+[x for x in self.im_dims]+[num_channels], dtype='float32')
-        self.crop            = crop
-        self.idx_classes     = idx_classes
-        self.name_batch      = []
-
-        if ' ' not in normalization_file:
-            self.norm_values = get_normalization_values(normalization_file)
-            self.normalize_input = True
-        else:
-            self.norm_values = normalization_file
-            self.normalize_input = False
-
-    def __len__( self ):
-        return len(self.order_idx)
-
-    def __getitem__( self, key ):
-        idx = self.order_idx[key]
-        fname_img = self.all_files[idx]
-        if isinstance(fname_img,list):
-            fname_img = fname_img[0]
-        if '.mat' in fname_img:
-            img = load_mat(fname_img,'MRI')
-        else:
-            img = load_h5py(fname_img)
-        try:
-            if ' ' not in self.norm_values:
-                idpat = fname_img.split('/')[-2]
-                img = img- self.norm_values[idpat]['min']
-                img = img/ (self.norm_values[idpat]['max']-self.norm_values[idpat]['min'])
-        except:
-            print(f'missing norm value for {idpat}')
-
-        img = crop_volume(img, self.crop)
-        if len(self.im_dims)==3 or len(self.im_dims)==2:
-            img /= np.percentile(img,85)
-
-        return img, fname_img
-
-    def fetch_batch(self):
-        self.name_batch = []
-        for i in range(self.batch_size):
-            if (i + self.batch_size*self.batch_cnt) < self.data_size:
-                idx = self.order_idx[i + self.batch_size*self.batch_cnt]
-            else:
-                idx = self.order_idx[random.randint(0, self.data_size)]
-            img, name = self.__getitem__( idx )
-            self.name_batch.append(name)
-            if img.ndim == len(self.im_dims):
-                self.im_batch[i,...,0] = img
-            else:
-                self.im_batch[i:] = img
-        self.batch_cnt += 1
-        if self.batch_cnt >= self.batch_max:
-            self.batch_cnt = 0
-        return self.im_batch, self.name_batch
+# class data_loader_infer_nolabel:
+#     def __init__( self, data_root, batch_size, im_dims, crop, num_classes, idx_classes, num_channels, normalization_file = ' '):
+#         # modify these lines to increase data loader flexibility
+#
+#         if '.pkl' in data_root or '.pickle' in data_root:
+#             with open( data_root, "rb" ) as lf:
+#                 list_files = pickle.load( lf )
+#         elif '.csv' in data_root:
+#             list_files = pd.read_csv(data_root, header=None).values.tolist()
+#         elif '.lsx' in data_root or '.xls' in data_root:
+#             list_files = pd.read_excel(data_root).values.tolist()
+#         else:
+#             print('Our dataLoader is not prepared to accept such input data, see its __init__')
+#             exit()
+#             return
+#
+#         self.all_files       = list_files
+#         self.order_idx       = list(range(len(self.all_files)))
+#         self.data_size       = len(self.order_idx)
+#         self.batch_size      = batch_size
+#         self.batch_cnt       = 0
+#         self.batch_max       = np.ceil(self.data_size/self.batch_size)
+#         self.im_dims         = im_dims
+#
+#         self.im_batch        = np.zeros([self.batch_size]+[x for x in self.im_dims]+[num_channels], dtype='float32')
+#         self.crop            = crop
+#         self.idx_classes     = idx_classes
+#         self.name_batch      = []
+#
+#         if ' ' not in normalization_file:
+#             self.norm_values = get_normalization_values(normalization_file)
+#             self.normalize_input = True
+#         else:
+#             self.norm_values = normalization_file
+#             self.normalize_input = False
+#
+#     def __len__( self ):
+#         return len(self.order_idx)
+#
+#     def __getitem__( self, key ):
+#         idx = self.order_idx[key]
+#         fname_img = self.all_files[idx]
+#         if isinstance(fname_img,list):
+#             fname_img = fname_img[0]
+#         if '.mat' in fname_img:
+#             img = load_mat(fname_img,'MRI')
+#         else:
+#             img = load_h5py(fname_img)
+#         try:
+#             if ' ' not in self.norm_values:
+#                 idpat = fname_img.split('/')[-2]
+#                 img = img- self.norm_values[idpat]['min']
+#                 img = img/ (self.norm_values[idpat]['max']-self.norm_values[idpat]['min'])
+#         except:
+#             print(f'missing norm value for {idpat}')
+#
+#         img = crop_volume(img, self.crop)
+#         if len(self.im_dims)==3 or len(self.im_dims)==2:
+#             img /= np.percentile(img,85)
+#
+#         return img, fname_img
+#
+#     def fetch_batch(self):
+#         self.name_batch = []
+#         for i in range(self.batch_size):
+#             if (i + self.batch_size*self.batch_cnt) < self.data_size:
+#                 idx = self.order_idx[i + self.batch_size*self.batch_cnt]
+#             else:
+#                 idx = self.order_idx[random.randint(0, self.data_size)]
+#             img, name = self.__getitem__( idx )
+#             self.name_batch.append(name)
+#             if img.ndim == len(self.im_dims):
+#                 self.im_batch[i,...,0] = img
+#             else:
+#                 self.im_batch[i:] = img
+#         self.batch_cnt += 1
+#         if self.batch_cnt >= self.batch_max:
+#             self.batch_cnt = 0
+#         return self.im_batch, self.name_batch
