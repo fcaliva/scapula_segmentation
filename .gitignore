@@ -135,5 +135,6 @@ pickles/
 extraFiles/
 tables/
 cfgs*/
+train_experiments_to_run.py
 ._*
 
