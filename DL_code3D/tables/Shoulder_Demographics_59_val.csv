@@ -1,7 +1,0 @@
-Number (00x),MRN,Server Name,Cube Date,Age,Sex,Diagnosis,Right or Left,Height (cm),Weight (kg),BMI,Notes
-38,67284763,segmented_E25979,2019-06-10,25,Male,"instability, labral tear, Hill sachs",Left,,,27.431431156699503,
-9,64010905,dicom_IzDstj7aQj,2020-03-10,34,Female,Instability,Left,160.0,60.3,23.5546875,
-40,46106318,segmented_E26148,2019-06-27,52,Female,Tendinosis,Right,162.6,83.9,31.7337121710701,
-3,45485641,dicom_55ZEJXO26T,2019-10-02,55,Male,Cuff tear,Right,182.9,108.9,32.5537083875272,
-39,35158685,segmented_E26087,2019-06-20,63,Female,Complete cuff tear,Left,152.4,80.7,34.745902825139,
-14,33422679,dicom_RqcutEDKpM,2019-11-19,69,Female,Complete cuff tear,Left,171.6,69.4,23.5681179737124,

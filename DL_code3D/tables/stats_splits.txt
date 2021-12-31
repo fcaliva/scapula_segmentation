@@ -1,9 +1,0 @@
-
-splits summary:
-dataset: N 59, age 52.53(14.82), bmi 27.43(4.84),M 39 F 20
-train: N 49, age 51.76(14.61), bmi 26.95(4.76), M 33 F 16
-val: N 6, age 49.67(15.49), weight 28.93(4.37), M 2 F 4
-test: N 4, age 66.25(7.60), weight 31.10(4.41), M 4 F 0
-train-val intersection: []
-train-test intersection: []
-val-test intersection: []
