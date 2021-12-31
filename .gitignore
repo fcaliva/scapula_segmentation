@@ -133,5 +133,6 @@ experiments/
 scriptJuno/
 pickles/
 extraFiles/
+cfgs*/
 ._*
 

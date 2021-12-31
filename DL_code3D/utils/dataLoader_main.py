@@ -24,6 +24,10 @@ def load_h5py(fname):
             img = np.abs(img).astype('float32')
         else:
             img = img.astype('float32')
+        if img.shape[-1] != 124:
+            tmp = np.zeros((img.shape[0],img.shape[1],124))
+            tmp[...,:img.shape[-1]] = img
+            img = tmp
     return img
 
 def load_h5py_flipped(fname):

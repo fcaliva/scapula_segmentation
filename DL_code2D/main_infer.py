@@ -26,6 +26,8 @@ if not trial:
     parser = argparse.ArgumentParser(description='define configuration file and run description')
     parser.add_argument('--cfg')
     parser.add_argument('--desc')
+    parser.add_argument('--gpu', default="")
+
     args = parser.parse_args()
     with open(args.cfg) as f:
          config = yaml.load(f, Loader=yaml.UnsafeLoader)
@@ -59,7 +61,10 @@ print('\n\n',sys.stdout.name,'\n\n')
 pprint(config)
 
 if 'all' not in config['common']['vis_GPU']:
-    os.environ['CUDA_VISIBLE_DEVICES'] = config['common']['vis_GPU']
+    if args.gpu == "":
+        os.environ['CUDA_VISIBLE_DEVICES'] = config['common']['vis_GPU']
+    else:
+        os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
 c = tf.ConfigProto()
 c.gpu_options.allow_growth=True
@@ -128,7 +133,7 @@ with tf.Session() as sess:
         elif config['data_infer']['view'] == 'sagittal_nikan':
             volSize = 160
         elif config['data_infer']['view'] == 'axial_nikan':
-            volSize = 302
+            volSize = 384 #302
 
         current_name = ''
         jj=-1
@@ -136,8 +141,9 @@ with tf.Session() as sess:
             try:
                 [ im_inf, seg_inf, name_inf ] = loader_infer.fetch_batch()
             except:
-                pdb.set_trace()
-
+                loader_infer.batch_cnt += 1
+                print('file corrupt')
+                continue
 
             volname = name_inf[0].split('/')[-1].split('_I')[0].split('.im')[0]
 
@@ -146,10 +152,11 @@ with tf.Session() as sess:
             else:
                 if jj != -1:
                     filename = pred_path + current_name
-                    if "nikan" in config['data_infer']['view']:
-                        savemat(filename,{'input': vol_im, 'pred':vol_pred.astype(np.float)})
+                    if ("nikan" in config['data_infer']['view']) or ("axial_nikan" in config['data_infer']['view']):
+                        # savemat(filename,{'input': vol_im, 'pred':vol_pred.astype(np.float16)})
+                        savemat(filename,{'pred':vol_pred.astype(np.float16)})
                     else:
-                        savemat(filename,{'input': vol_im, 'gt': vol_seg.astype(np.uint8), 'pred':(vol_pred>=0.5).astype(np.uint8)})
+                        savemat(filename,{'input': vol_im.astype(np.float16), 'gt': vol_seg.astype(np.uint8), 'pred':vol_pred.astype(np.float16)})
                     print(f'processed {filename}')
                 current_name = volname
                 new_volume = True
@@ -166,7 +173,7 @@ with tf.Session() as sess:
                 try:
                     vol_im[...,idx_vol]   = np.squeeze(im_inf[id_in_batch,...])
                 except:
-                    pdb.set_trace()
+                    break
                 vol_seg[...,idx_vol,:]  = seg_inf[id_in_batch,...]
                 vol_pred[...,idx_vol,:] = inf_pred[id_in_batch,...]
                 jj+=1
@@ -182,9 +189,10 @@ with tf.Session() as sess:
         #             vol_pred = np.delete(vol_pred,range(sl,volSize),axis=-2)
         #             break
         if "nikan" in config['data_infer']['view']:
-            savemat(filename,{'input': vol_im, 'pred':vol_pred})
+            # savemat(filename,{'input': vol_im, 'pred':vol_pred.astype(np.float16)})
+            savemat(filename,{'pred':vol_pred.astype(np.float16)})
         else:
-            savemat(filename,{'input': vol_im, 'gt': vol_seg.astype(np.uint8), 'pred':(vol_pred>=0.5).astype(np.uint8)})
+            savemat(filename,{'input': vol_im.astype(np.float16), 'gt': vol_seg.astype(np.uint8), 'pred':vol_pred.astype(np.float16)})
         print(f'processed {filename}')
 
 

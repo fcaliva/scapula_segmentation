@@ -17,16 +17,32 @@ def load_h5py(fname, view='', slice=0):
             img = np.array(hf['data'])
         except:
             img = np.array(hf['mri'])
-
         if np.iscomplex(img).all():
             img = np.abs(img).astype('float32')
         else:
             img = img.astype('float32')
+    if view == 'axial':
+        if img.shape[-1] != 124:
+            tmp = np.zeros((img.shape[0],img.shape[1],124))
+            tmp[...,:img.shape[-1]] = img
+            img = tmp
     if view == 'sagittal':
         img = img.transpose([0,2,1])
+        if im.shape[1]!=124:
+            tmp = np.zeros((img.shape[0],124,img.shape[2]))
+            tmp[:,:img.shape[1],:] = img
+            img = tmp
     elif view == 'coronal':
         img = img.transpose([2,1,0])
+        if im.shape[0]!=124:
+            tmp = np.zeros((124,img.shape[1],img.shape[2]))
+            tmp[:img.shape[0],...] = img
+            img = tmp
     elif view == 'axial_nikan':
+        if img.shape[-1] != 160:
+            tmp = np.zeros((img.shape[0],img.shape[1],160))
+            tmp[...,:img.shape[-1]] = img
+            img = tmp
         img = img.transpose([2,1,0])
     return img[...,slice]
 
@@ -121,7 +137,8 @@ class data_loader:
             lof = []
             counter_slices = []
             for ff in list_files:
-                for c_sl in range(82,384):
+                for c_sl in range(0,384):
+                #for c_sl in range(82,384):
                     lof.append(ff)
                     counter_slices.append(c_sl)
         else:

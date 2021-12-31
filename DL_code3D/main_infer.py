@@ -22,6 +22,7 @@ if not trial:
     parser = argparse.ArgumentParser(description='define configuration file and run description')
     parser.add_argument('--cfg')
     parser.add_argument('--desc')
+    parser.add_argument('--gpu', default="")
     args = parser.parse_args()
     with open(args.cfg) as f:
          config = yaml.load(f, Loader=yaml.UnsafeLoader)
@@ -52,7 +53,10 @@ sys.stdout = logger(sys.stdout,path=config['common']['log_path'],desc=desc)
 print('\n\n',sys.stdout.name,'\n\n')
 pprint(config)
 if 'all' not in config['common']['vis_GPU']:
-    os.environ['CUDA_VISIBLE_DEVICES'] = config['common']['vis_GPU']
+    if args.gpu == "":
+        os.environ['CUDA_VISIBLE_DEVICES'] = config['common']['vis_GPU']
+    else:
+        os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 # tf.logging.set_verbosity(tf.logging.ERROR)
 
@@ -115,7 +119,7 @@ with tf.Session() as sess:
                 for i_cnt_save in range(im_inf.shape[0]):
 
                     filename = pred_path + name_inf[i_cnt_save].split('/')[-1].split('.')[0]
-                    savemat(filename,{'input': im_inf[i_cnt_save,:], 'gt': seg_inf[i_cnt_save,:], 'pred': inf_pred[i_cnt_save,:]})
+                    savemat(filename,{'input': im_inf[i_cnt_save,:].astype(np.float16), 'gt': seg_inf[i_cnt_save,:], 'pred': inf_pred[i_cnt_save,:].astype(np.float16)})
                     # np.savez(filename, input = im_inf[i_cnt_save,:], gt = seg_inf[i_cnt_save,:], pred = inf_pred[i_cnt_save,:])
                     # np.savez(filename, input = im_inf[i_cnt_save,:], pred = inf_pred[i_cnt_save,:])
     # 2D_data:
@@ -141,7 +145,7 @@ with tf.Session() as sess:
             if viter != 0 and idx_vol%(config['data_infer']['vol_size']-1) == 0:
                 filename = pred_path + name_inf[0].split('/')[-1].split('_slice_')[0]
                 # savemat(filename,{'input': vol_im, 'gt': vol_seg.astype(np.uint8), 'pred':(vol_pred>=0.5).astype(np.uint8)})
-                savemat(filename,{'input': vol_im, 'gt': vol_seg.astype(np.uint8), 'pred':vol_pred})
+                savemat(filename,{'input': vol_im.astype(np.float16), 'gt': vol_seg.astype(np.uint8), 'pred':vol_pred.astype(np.float16)})
                 # savemat(filename,{'pred':(vol_pred>=0.5).astype(np.uint8)})
 
                 vol_im   = np.zeros((np.hstack((config['data_infer']['vol_size'],config['data_infer']['im_dims'])).tolist()))

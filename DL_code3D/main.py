@@ -22,6 +22,7 @@ if not trial:
     parser = argparse.ArgumentParser(description='define configuration file and run description')
     parser.add_argument('--cfg')
     parser.add_argument('--desc')
+    parser.add_argument('--gpu', default="")
     args = parser.parse_args()
     with open(args.cfg) as f:
          config = yaml.load(f, Loader=yaml.UnsafeLoader)
@@ -56,7 +57,10 @@ print('\n\n',sys.stdout.name,'\n\n')
 pprint(config)
 
 if 'all' not in config['common']['vis_GPU']:
-    os.environ['CUDA_VISIBLE_DEVICES'] = config['common']['vis_GPU']
+    if args.gpu == "":
+        os.environ['CUDA_VISIBLE_DEVICES'] = config['common']['vis_GPU']
+    else:
+        os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
 c = tf.ConfigProto()
 c.gpu_options.allow_growth=True
