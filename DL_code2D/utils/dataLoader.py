@@ -28,13 +28,13 @@ def load_h5py(fname, view='', slice=0):
             img = tmp
     if view == 'sagittal':
         img = img.transpose([0,2,1])
-        if im.shape[1]!=124:
+        if img.shape[1]!=124:
             tmp = np.zeros((img.shape[0],124,img.shape[2]))
             tmp[:,:img.shape[1],:] = img
             img = tmp
     elif view == 'coronal':
         img = img.transpose([2,1,0])
-        if im.shape[0]!=124:
+        if img.shape[0]!=124:
             tmp = np.zeros((124,img.shape[1],img.shape[2]))
             tmp[:img.shape[0],...] = img
             img = tmp
